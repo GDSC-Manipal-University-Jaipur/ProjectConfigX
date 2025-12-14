@@ -61,20 +61,31 @@ ConfigXQL is designed to feel like plain English. No complex syntax to memorize 
 
 ## 🛠️ Getting Started in Python
 
-```python
-import ConfigX
-confx = ConfigX()
+### **Installing via PiP**
+
+```bash 
+pip install pyconfigx
 ```
 
-### **Debug Modes**
-
+### **Importing in Python & Setting up**
 ```python
-# Development mode: Detailed exceptions for debugging
-confx.set_debug_mode('developer')
+from configx imort ConfigX
 
-# Production mode: Safe defaults, auto-logging
-confx.set_debug_mode('deployed')
+# This enables persistent smart storage with Snapshots & WAL. So, Your data is safe on disk!
+
+confx = ConfigX(persistent=True)
+
+# You can instantiate ConfigX without it too, to be used as a stateless & in-memory data engine
+
 ```
+### **Storage using ConfigX**
+- ConfigX in persistent mode, stores data dynamically in a default `.configx` folder in your `Current Working Directory`, Just like a personal data engine for your dir.
+
+- This can be changed and customised to run different instances in the same `CWD`, via 
+    ```python 
+    confx_settings = ConfigX(persistent=True, storage_dir=".settings/")
+    confx_memory = ConfigX(persistent=True, storage_dir=".memory/")
+    ``` 
 
 ### **The `resolve()` Method**
 
@@ -88,6 +99,8 @@ confx.resolve('<query>')
 
 ## 📖 ConfigXQL Query Guide
 
+#### _Only Creation, Updation & Deletion are supported in current **Alpha Release** of ConfigX, No complex Wild-card/AI/Batch Transaction/Schema Enforcement added yet!_
+#### Current Version does not support features marked with `**`
 ### **1. Creating Branches**
 
 ```python
@@ -104,12 +117,12 @@ confx.resolve('appSettings.uisettings')
 
 ```python
 # Create with type
-confx.resolve('appSettings.uisettings.userId:INT')
+confx.resolve('appSettings.uisettings.userId=1001')
 
-# Create with type and default value
+# Create with type and default value**
 confx.resolve('appSettings.uisettings.isLoggedIn:BOOL=false')
 
-# Batch create multiple values
+# Batch create multiple values**
 confx.resolve('appSettings.uisettings.*[theme="dark":STR, shortcuts="ctrl+w":STR]')
 ```
 
@@ -117,13 +130,11 @@ confx.resolve('appSettings.uisettings.*[theme="dark":STR, shortcuts="ctrl+w":STR
 
 ```python
 # Update with type change
-confx.resolve('appSettings.uisettings.userId:STR="aditya"')
+confx.resolve('appSettings.User.username="aditya"')
 
 # Simple update
-confx.resolve('appSettings.uisettings.userId="rohan"')
+confx.resolve('appSettings.User.userName="rohan"')
 
-# Dynamic value (type inferred)
-confx.resolve('appSettings.uisettings.theme="dark"')
 ```
 
 #### **Get Values**
@@ -145,11 +156,11 @@ confx.resolve('appSettings.uisettings.theme-')
 # Delete entire branch
 confx.resolve('appSettings.uisettings-')
 
-# Delete multiple values
+# Delete multiple values**
 confx.resolve('appSettings.uisettings.*[theme, shortcuts]-')
 ```
 
-#### **Reset to Defaults**
+#### **Reset to Defaults****
 
 ```python
 # Reset branch to default values
@@ -159,7 +170,12 @@ confx.resolve('appSettings.!uisettings')
 confx.resolve('appSettings.uisettings.userName!default=STR:"Guest"')
 ```
 
-### **3. Wildcard Resolution**
+---
+### See more examples in [examples/](https://github.com/xdityagr/ProjectConfigX/tree/main/examples)
+
+---
+
+### **3. Wildcard Resolution****
 
 ```python
 # Update all direct children
@@ -175,7 +191,7 @@ confx.resolve('[*].userId=[0001, 0002]')
 confx.resolve('[*].userId=[000*]')
 ```
 
-### **4. Built-in Functions**
+### **4. Built-in Functions****
 
 ```python
 # Count items
@@ -203,7 +219,7 @@ confx.resolve('appSettings.uisettings!search="theme==dark"')
 confx.resolve('appSettings.uisettings!search="<keyword>"')
 ```
 
-### **5. Conditional Logic**
+### **5. Conditional Logic****
 
 ```python
 # Simple condition
@@ -221,7 +237,7 @@ confx.resolve('appSettings.uisettings.theme=="light":theme="dark";appSettings.!u
 
 ---
 
-## 📦 Batch Transactions
+## 📦 Batch Transactions**
 
 Handle multiple operations atomically.
 
@@ -243,7 +259,7 @@ with confx.transaction():
 
 ---
 
-## 🛡️ Schema Validation
+## 🛡️ Schema Validation**
 
 Ensure your data structure matches expected schemas.
 
@@ -265,7 +281,7 @@ confx.validate(schema)
 
 ---
 
-## 🔐 Encryption
+## 🔐 Encryption**
 
 Protect sensitive data with automatic encryption.
 
@@ -309,7 +325,7 @@ ConfigX supports a comprehensive range of data types:
 ---
 
 
-## ✨ AI-Powered Features (Future Scope*)
+## ✨ AI-Powered Features (Future Scope**)
 
 ConfigX now comes with powerful AI capabilities that make data management intelligent and effortless:
 
@@ -382,7 +398,7 @@ confx.optimize_query('appSettings.uisettings.theme')
 
 ---
 
-## 🤖 AI Use Cases (Future Scope*)
+## 🤖 AI Use Cases (Future Scope**)
 
 ConfigX is designed for modern AI workflows:
 
@@ -503,7 +519,9 @@ confx.optimize_query('appSettings.auth.password')
 ---
 
 ## Development notes : 
-- Development will begin for Python as a binding first, Scope is to introduce ConfigX to the world as an independant CLI program. 
+- Update : First Alpha Version has been released, Check it out!
+- More features rolling out soon for `ConfigXQL`
+- CLI Development will start soon.
 - Bindings for other languages will start development once standalone CLI Engine is developed. 
 
 
@@ -523,4 +541,4 @@ For questions, feedback, or contributions:
 
 Made with ❤️ in India by [Aditya Gaur](https://github.com/xdityagr)
 <br>
-**© 2025 Aditya Gaur. All rights reserved.** Unauthorized use or reproduction of this project, including its design, concepts, and documentation, is prohibited.
+**© 2025 Aditya Gaur. All rights reserved.** Unauthorized use or reproduction of this project, including its design, concepts, and documentation is prohibited.

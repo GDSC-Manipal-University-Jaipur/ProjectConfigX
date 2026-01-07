@@ -23,10 +23,8 @@ def exec_query(tree, query):
     """
     Helper to parse + execute a single ConfigXQL statement.
     """
-    parser = ConfigXQLParser()
     interpreter = ConfigXQLInterpreter(tree)
-    ast = parser.parse(query)
-    return interpreter.execute(ast)
+    return interpreter.execute(query)
 
 
 # -----------------------------------------------------------------------------

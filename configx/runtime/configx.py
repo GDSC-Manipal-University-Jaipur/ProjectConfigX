@@ -123,7 +123,7 @@ class ConfigX:
             wal_path = f"{storage_dir}/wal.cx"
 
             self._storage = StorageRuntime(snapshot_path, wal_path)
-            self._tree.attach_runtime(self._storage)
+            self._tree.runtime = self._storage
             self._storage.start(self._tree)
 
             self._storage = None

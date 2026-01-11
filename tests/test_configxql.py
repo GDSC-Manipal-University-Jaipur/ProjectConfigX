@@ -8,11 +8,15 @@ Tests for ConfigXQL language layer:
 """
 
 import pytest
+import os
+
+import shutil
 
 from configx.core.tree import ConfigTree
 from configx.core.errors import ConfigPathNotFoundError
 from configx.qlang.parser import ConfigXQLParser
 from configx.qlang.interpreter import ConfigXQLInterpreter
+from configx.runtime.configx import ConfigX
 
 
 # -----------------------------------------------------------------------------
@@ -148,3 +152,19 @@ def test_parser_rejects_unquoted_string():
 
     with pytest.raises(Exception):
         parser.parse('a.b=dark')
+
+
+# -----------------------------------------------------------------------------
+# ConfigX initialization test
+# -----------------------------------------------------------------------------
+
+def test_configx_initialization_with_storage_dir():
+    try:
+        path = os.path.join(os.getcwd(),'memory')
+        configx = ConfigX(storage_dir=path,persistent=True)
+        configx.close()
+    except AttributeError:
+        raise
+    finally:
+        if os.path.exists(path):
+            shutil.rmtree(path)

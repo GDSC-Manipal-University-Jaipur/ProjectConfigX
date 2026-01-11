@@ -57,6 +57,7 @@ Install the project in **editable mode** to see changes instantly.
 pip install --upgrade pip
 pip install -e .
 pip install pytest
+pip install pytest-shutil
 ```
 
 ### 4. Run Tests

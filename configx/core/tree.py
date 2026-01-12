@@ -199,13 +199,7 @@ class ConfigTree:
         if not isinstance(data, dict):
             raise ConfigInvalidFormatError("Top-level configuration must be a dict.")
 
-        self.root = Node(name="root")
-
-        for key, value in data.items():
-            if not isinstance(key, str):
-                raise ConfigInvalidFormatError("All keys must be strings.")
-
-            self.root.children[key] = Node.from_primitive(key, value)
+        self.root = Node.from_primitive('root',data)
 
     def set_strict_mode(self, enabled: bool):
         """Allow toggling strict mode at runtime."""

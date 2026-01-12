@@ -29,16 +29,16 @@ class SnapshotStore:
 
     @classmethod
     def save(cls, tree, file_path: str):
-        """
-        Save the entire tree to a binary snapshot.
-        """
-        directory = os.path.dirname(file_path)
-        if directory and not os.path.exists(directory):
-            os.makedirs(directory)
+    """
+    Save the entire tree to a binary snapshot.
+    """
+    directory = os.path.dirname(file_path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
 
-        with open(file_path, "wb") as f:
-            cls._write_header(f)
-            cls._write_node(f, tree.root)
+    with open(file_path, "wb") as f:
+        cls._write_header(f)
+        cls._write_node(f, tree.root)
 
     @classmethod
     def load(cls, tree, file_path: str):

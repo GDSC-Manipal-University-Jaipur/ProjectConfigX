@@ -20,19 +20,17 @@ No files
 Perfect for tests, scripts, AI agents
 """
 
+import atexit
+import json
+import os
 from typing import Any, Optional
 
+from colorama import Fore, Style, init
+
 from configx.core.tree import ConfigTree
-from configx.storage.runtime import StorageRuntime
 from configx.qlang.interpreter import ConfigXQLInterpreter
-import os, json
-import atexit
+from configx.storage.runtime import StorageRuntime
 
-from colorama import Fore, Style, init
-init(autoreset=True)
-
-
-from colorama import Fore, Style, init
 init(autoreset=True)
 
 

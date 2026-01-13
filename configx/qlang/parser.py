@@ -85,6 +85,11 @@ class ConfigXQLTransformer(Transformer):
 
     def bool(self, token):
         return token == "true"
+    
+    def list(self,*items):
+        if len(items)==1 and isinstance(items[0],list):
+            return items[0]
+        return list(items)
 
 
 # -----------------------------------------------------------------------------

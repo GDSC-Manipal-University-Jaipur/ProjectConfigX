@@ -121,11 +121,6 @@ class ConfigTree:
         
         """
 
-        #validate 
-        parts = self._split(path)
-        if not parts:
-            raise ConfigInvalidPathError(path, "Empty path is not allowed.")
-
         # walk and create intermediates if allowed
         node = self._walk(path, create_missing=True)
         if node is None:

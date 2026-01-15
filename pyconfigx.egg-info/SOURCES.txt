@@ -21,6 +21,7 @@ pyconfigx.egg-info/dependency_links.txt
 pyconfigx.egg-info/requires.txt
 pyconfigx.egg-info/top_level.txt
 tests/test_configxql.py
+tests/test_list.py
 tests/test_node.py
 tests/test_runtime_persistence.py
 tests/test_tree_basic.py

@@ -90,4 +90,6 @@ class Node:
             return "FLOAT"
         if isinstance(value, str):
             return "STR"
+        if isinstance(value, list):
+            return "LIST"
         return "JSON"

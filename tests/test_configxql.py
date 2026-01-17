@@ -168,3 +168,27 @@ def test_configx_initialization_with_storage_dir():
     finally:
         if os.path.exists(path):
             shutil.rmtree(path)
+
+def test_list_basic():
+    c = ConfigX()
+    assert c.resolve('items=[1, 2, 3]') == [1, 2, 3]
+    assert c.resolve('items') == [1, 2, 3]
+    assert c.resolve('items!') == [1, 2, 3]
+    assert c.resolve('missing!') is None
+
+def test_list_nested():
+    c = ConfigX()
+    c.resolve('matrix1=[[1, 2], [3, 4]]')
+    assert c.resolve('matrix1') == [[1, 2], [3, 4]]
+
+def test_list_persistence():
+    path = os.path.join(os.getcwd(),'test_db')
+    c = ConfigX(storage_dir=path)
+    c.resolve('data=[1, 2, 3]')
+    c.close()
+    
+    c2 = ConfigX(storage_dir=path)
+    c2.close()
+    shutil.rmtree(path)
+    assert c2.resolve('data') == [1, 2, 3]
+

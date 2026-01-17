@@ -34,7 +34,9 @@ path: IDENT ("." IDENT)*
       | SIGNED_INT -> int
       | SIGNED_FLOAT -> float
       | BOOL -> bool
+      | list -> list
 
+list : "[" [value ("," value)*] "]"
 // ----------------------
 // Tokens
 // ----------------------

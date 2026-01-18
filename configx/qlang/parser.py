@@ -86,6 +86,9 @@ class ConfigXQLTransformer(Transformer):
     def bool(self, token):
         return token == "true"
 
+    def list(self, *items):
+        return [*items]
+
 
 # -----------------------------------------------------------------------------
 # Parser Wrapper

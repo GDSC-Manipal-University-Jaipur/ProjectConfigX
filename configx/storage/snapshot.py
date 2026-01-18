@@ -108,14 +108,21 @@ class SnapshotStore:
             elif isinstance(node.value, str):
                 tag = b"S"
                 val_bytes = node.value.encode("utf-8")
+            elif isinstance(node.value, list):
+                tag = b"L"
+                val_bytes = b""  # List items written separately
             else:
                 raise ConfigInvalidFormatError(
                     f"Unsupported value type: {type(node.value)}"
                 )
 
         f.write(tag)
-        f.write(struct.pack(">I", len(val_bytes)))
-        f.write(val_bytes)
+        if tag == b"L":
+            # Write list: [count][item1][item2]...
+            cls._write_list(f, node.value)
+        else:
+            f.write(struct.pack(">I", len(val_bytes)))
+            f.write(val_bytes)
 
         # --- CHILDREN ---
         children = list(node.children.values())
@@ -123,6 +130,44 @@ class SnapshotStore:
 
         for child in children:
             cls._write_node(f, child)
+
+    @classmethod
+    def _write_list(cls, f: io.BufferedWriter, items: list):
+        """Write a list value: [count:>I][item1][item2]..."""
+        f.write(struct.pack(">I", len(items)))
+        for item in items:
+            cls._write_value(f, item)
+
+    @classmethod
+    def _write_value(cls, f: io.BufferedWriter, value):
+        """Write a single value with its type tag."""
+        if value is None:
+            f.write(b"N")
+            f.write(struct.pack(">I", 0))
+        elif isinstance(value, bool):
+            f.write(b"B")
+            f.write(struct.pack(">I", 1))
+            f.write(struct.pack("?", value))
+        elif isinstance(value, int):
+            f.write(b"I")
+            f.write(struct.pack(">I", 8))
+            f.write(struct.pack(">q", value))
+        elif isinstance(value, float):
+            f.write(b"F")
+            f.write(struct.pack(">I", 8))
+            f.write(struct.pack(">d", value))
+        elif isinstance(value, str):
+            f.write(b"S")
+            val_bytes = value.encode("utf-8")
+            f.write(struct.pack(">I", len(val_bytes)))
+            f.write(val_bytes)
+        elif isinstance(value, list):
+            f.write(b"L")
+            cls._write_list(f, value)
+        else:
+            raise ConfigInvalidFormatError(
+                f"Unsupported value type in list: {type(value)}"
+            )
 
     @classmethod
     def _read_node(cls, f: io.BufferedReader) -> Node:
@@ -139,26 +184,33 @@ class SnapshotStore:
 
         # --- VALUE ---
         tag = f.read(1)
-        val_len = struct.unpack(">I", f.read(4))[0]
-        val_data = f.read(val_len)
-
-        if tag == b"N":
-            node.value = None
-            node.type = None
-        elif tag == b"B":
-            node.value = struct.unpack("?", val_data)[0]
-            node.type = "BOOL"
-        elif tag == b"I":
-            node.value = struct.unpack(">q", val_data)[0]
-            node.type = "INT"
-        elif tag == b"F":
-            node.value = struct.unpack(">d", val_data)[0]
-            node.type = "FLOAT"
-        elif tag == b"S":
-            node.value = val_data.decode("utf-8")
-            node.type = "STR"
+        
+        if tag == b"L":
+            # List has special format: [count][items...] - no val_len/val_data
+            count = struct.unpack(">I", f.read(4))[0]
+            node.value = [cls._read_value(f) for _ in range(count)]
+            node.type = "LIST"
         else:
-            raise ConfigInvalidFormatError(f"Unknown value tag: {tag}")
+            val_len = struct.unpack(">I", f.read(4))[0]
+            val_data = f.read(val_len)
+
+            if tag == b"N":
+                node.value = None
+                node.type = None
+            elif tag == b"B":
+                node.value = struct.unpack("?", val_data)[0]
+                node.type = "BOOL"
+            elif tag == b"I":
+                node.value = struct.unpack(">q", val_data)[0]
+                node.type = "INT"
+            elif tag == b"F":
+                node.value = struct.unpack(">d", val_data)[0]
+                node.type = "FLOAT"
+            elif tag == b"S":
+                node.value = val_data.decode("utf-8")
+                node.type = "STR"
+            else:
+                raise ConfigInvalidFormatError(f"Unknown value tag: {tag}")
 
         # --- CHILDREN ---
         child_count = struct.unpack(">I", f.read(4))[0]
@@ -167,3 +219,27 @@ class SnapshotStore:
             node.children[child.name] = child
 
         return node
+
+    @classmethod
+    def _read_value(cls, f: io.BufferedReader):
+        """Read a single value with its type tag."""
+        tag = f.read(1)
+        if tag == b"L":
+            count = struct.unpack(">I", f.read(4))[0]
+            return [cls._read_value(f) for _ in range(count)]
+        
+        val_len = struct.unpack(">I", f.read(4))[0]
+        val_data = f.read(val_len)
+        
+        if tag == b"N":
+            return None
+        elif tag == b"B":
+            return struct.unpack("?", val_data)[0]
+        elif tag == b"I":
+            return struct.unpack(">q", val_data)[0]
+        elif tag == b"F":
+            return struct.unpack(">d", val_data)[0]
+        elif tag == b"S":
+            return val_data.decode("utf-8")
+        else:
+            raise ConfigInvalidFormatError(f"Unknown value tag in list: {tag}")

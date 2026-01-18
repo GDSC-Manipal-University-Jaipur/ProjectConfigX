@@ -4,7 +4,6 @@ from __future__ import annotations
 import struct
 import io
 import os
-from typing import Any
 
 from configx.core.node import Node
 from configx.core.errors import (
@@ -87,53 +86,36 @@ class SnapshotStore:
         Binary node format:
         [name_len][name][type_tag][value_len][value][child_count][children...]
         """
-
-        def _serialize_value_to_bytes(value: Any)->bytes:
-            """This function converts values into serialized binary form
-                Return the serialized bytes for a value in the form:
-                [tag][value_len][value]
-
-            """
-            tag = b"N"
-            val_bytes = b""
-            if value is not None:
-                if isinstance(value, bool):
-                    tag = b"B"
-                    val_bytes = struct.pack("?", value)
-                elif isinstance(value, int):
-                    tag = b"I"
-                    val_bytes = struct.pack(">q", value)
-                elif isinstance(value, float):
-                    tag = b"F"
-                    val_bytes = struct.pack(">d", value)
-                elif isinstance(value, str):
-                    tag = b"S"
-                    val_bytes = value.encode("utf-8")
-                elif isinstance(value,list):
-                    tag = b"L"
-                    inner = bytearray() # for containing byte elements of the list in a seralized (list like object for bytes)
-                    for item in value:
-                        inner.extend(_serialize_value_to_bytes(item)) # inserts the returned element
-                    val_bytes = bytes(inner)
-
-                else:
-                    raise ConfigInvalidFormatError(
-                        f"Unsupported value type: {type(value)}"
-                    )
-            
-            out = bytearray()
-            out.extend(tag)
-            out.extend(struct.pack(">I", len(val_bytes)))
-            out.extend(val_bytes)
-            return bytes(out)
-        
         # --- NAME ---
         name_bytes = node.name.encode("utf-8")
         f.write(struct.pack(">I", len(name_bytes)))
         f.write(name_bytes)
-        
+
         # --- VALUE ---
-        f.write(_serialize_value_to_bytes(node.value))
+        tag = b"N"
+        val_bytes = b""
+
+        if node.value is not None:
+            if isinstance(node.value, bool):
+                tag = b"B"
+                val_bytes = struct.pack("?", node.value)
+            elif isinstance(node.value, int):
+                tag = b"I"
+                val_bytes = struct.pack(">q", node.value)
+            elif isinstance(node.value, float):
+                tag = b"F"
+                val_bytes = struct.pack(">d", node.value)
+            elif isinstance(node.value, str):
+                tag = b"S"
+                val_bytes = node.value.encode("utf-8")
+            else:
+                raise ConfigInvalidFormatError(
+                    f"Unsupported value type: {type(node.value)}"
+                )
+
+        f.write(tag)
+        f.write(struct.pack(">I", len(val_bytes)))
+        f.write(val_bytes)
 
         # --- CHILDREN ---
         children = list(node.children.values())
@@ -146,60 +128,37 @@ class SnapshotStore:
     def _read_node(cls, f: io.BufferedReader) -> Node:
         """
         Read a node recursively from the binary snapshot.
-        """        
-        def _type_value_reader(tag:bytes,val_data:bytes)->Any:
-            if tag == b"N":
-                value = None
-                dtype = None
-            elif tag == b"B":
-                value = struct.unpack("?", val_data)[0]
-                dtype = "BOOL"
-            elif tag == b"I":
-                value = struct.unpack(">q", val_data)[0]
-                dtype = "INT"
-            elif tag == b"F":
-                value = struct.unpack(">d", val_data)[0]
-                dtype = "FLOAT"
-            elif tag == b"S":
-                value = val_data.decode("utf-8")
-                dtype = "STR"
-            elif tag == b"L":
-                value=[]
-                dtype="LIST"
-                byte_len = len(val_data)
-                pointer=0 # It works as a pointer of bytes (of value data)
-                while pointer<byte_len:
-                    element_tag = val_data[pointer:pointer+1] # Tag of elements of list
-                    pointer+=1 
-                    if pointer+4>byte_len:
-                        raise ConfigInvalidFormatError("Truncated element length in list.")
-                    element_val_len = struct.unpack(">I", val_data[pointer:pointer+4])[0]
-                    pointer+=4
-                    if pointer + element_val_len > byte_len:
-                        raise ConfigInvalidFormatError("Truncated element payload in list.")
-                    element_val_data = val_data[pointer:pointer + element_val_len]
-                    pointer += element_val_len
-                    _, item_value = _type_value_reader(tag=element_tag,val_data=element_val_data)
-                    value.append(item_value)
-            else:
-                raise ConfigInvalidFormatError(f"Unknown value tag: {tag}")
-            return dtype,value
-        
-        # --- NAME ---
+        """
         raw_len = f.read(4)
+        if not raw_len:
+            raise ConfigInvalidFormatError("Unexpected EOF while reading snapshot.")
+
         name_len = struct.unpack(">I", raw_len)[0]
-        name_byte = f.read(name_len)
-        name = name_byte.decode("utf-8")
+        name = f.read(name_len).decode("utf-8")
         node = Node(name=name)
-        
+
         # --- VALUE ---
         tag = f.read(1)
-        val_len_bytes = f.read(4)
-        val_len = struct.unpack(">I", val_len_bytes)[0]
-        val_data = f.read(val_len) 
-        dtype,value=_type_value_reader(tag=tag,val_data=val_data)
-        node.type=dtype
-        node.value=value
+        val_len = struct.unpack(">I", f.read(4))[0]
+        val_data = f.read(val_len)
+
+        if tag == b"N":
+            node.value = None
+            node.type = None
+        elif tag == b"B":
+            node.value = struct.unpack("?", val_data)[0]
+            node.type = "BOOL"
+        elif tag == b"I":
+            node.value = struct.unpack(">q", val_data)[0]
+            node.type = "INT"
+        elif tag == b"F":
+            node.value = struct.unpack(">d", val_data)[0]
+            node.type = "FLOAT"
+        elif tag == b"S":
+            node.value = val_data.decode("utf-8")
+            node.type = "STR"
+        else:
+            raise ConfigInvalidFormatError(f"Unknown value tag: {tag}")
 
         # --- CHILDREN ---
         child_count = struct.unpack(">I", f.read(4))[0]

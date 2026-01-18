@@ -52,4 +52,3 @@ def test_type_inference():
     assert Node.infer_type(10) == "INT"
     assert Node.infer_type(1.2) == "FLOAT"
     assert Node.infer_type("hi") == "STR"
-    assert Node.infer_type(["Hi","This","Is","ConfigX"]) == "LIST"

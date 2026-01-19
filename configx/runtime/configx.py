@@ -116,29 +116,24 @@ class ConfigX:
 
         # Persistence runtime (optional)
         self._storage = None
+        snapshot_path = None
+        wal_path = None
         if storage_dir:
             snapshot_path = f"{storage_dir}/snapshot.cx"
             wal_path = f"{storage_dir}/wal.cx"
-
-            self._storage = StorageRuntime(snapshot_path, wal_path)
-            self._tree.runtime = self._storage
-            self._storage.start(self._tree)
-
-            self._storage = None
-
-
-        if persistent:
+            
+        elif persistent:
             base_dir = storage_dir or os.path.join(os.getcwd(), ".configx")
             os.makedirs(base_dir, exist_ok=True)
-
-
             snapshot_path = os.path.join(base_dir, "snapshot.cx")
             wal_path = os.path.join(base_dir, "wal.cx")
 
-
+        if persistent or storage_dir:
             self._storage = StorageRuntime(snapshot_path, wal_path)
             self._tree.runtime = self._storage
             self._storage.start(self._tree)
+        if not persistent:
+            self._storage = None
     
         if load_json:
             self.load_json(load_json)
